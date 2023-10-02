@@ -80,4 +80,29 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="@+id/editText"
         app:layout_constraintTop_toTopOf="@+id/editText" />
+
+    <Button
+        android:id="@+id/closeGattButton"
+        android:layout_width="87dp"
+        android:layout_height="38dp"
+        android:background="@color/red"
+        android:text="断开连接"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toTopOf="@+id/textView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.79"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.774" />
+
+    <TextView
+        android:id="@+id/charaText"
+        android:layout_width="277dp"
+        android:layout_height="41dp"
+        android:layout_marginBottom="4dp"
+        android:text="TextView"
+        android:textSize="13dp"
+        app:layout_constraintBottom_toTopOf="@+id/closeGattButton"
+        app:layout_constraintEnd_toEndOf="@+id/closeGattButton"
+        app:layout_constraintStart_toStartOf="@+id/textView" />
 </android.support.constraint.ConstraintLayout>

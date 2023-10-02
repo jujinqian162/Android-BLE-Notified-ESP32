@@ -41,12 +41,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String CHANAL_ID = "jjq";
     public static final int NOTIFICATION_ID = 114514;
     private Button mDeviceNameButton;
+    private Button closeGattButton;
     private ProgressBar progressBar;
     private EditText DeviceNameEditText;
     private String DeviceNameText;
     private TextView countText;
     private int charaChangeCount = 0;
     private TextView deviceText;
+    private TextView charaText;
 
     private NotificationManagerCompat mNotificationManager;
 
@@ -113,6 +115,9 @@ public class MainActivity extends AppCompatActivity {
         progressBar  = findViewById(R.id.progressBar);
         progressBar.setVisibility(View.INVISIBLE);
 
+        charaText = findViewById(R.id.charaText);
+        charaText.setText(String.format("Characteristic UUID\n%s",CHARACTERISIC_UUID_RX));
+
         deviceText = findViewById(R.id.textView);
         deviceText.setText("已准备连接至" + MainActivity.mBLEDeviceName);
 
@@ -127,6 +132,23 @@ public class MainActivity extends AppCompatActivity {
         permission = new BLE_Permission();
         permission.checkPermission(this);
 
+        closeGattButton = findViewById(R.id.closeGattButton);
+        closeGattButton.setVisibility(View.INVISIBLE);
+        closeGattButton.setOnClickListener(v -> {
+            mBluetoothGatt.disconnect();
+            mBluetoothGatt.close();
+            Log.i(TAG, "onConnectionStateChange: 断开连接");
+            deviceText.setText("已准备连接至" + MainActivity.mBLEDeviceName);
+            mConnectButton.setText("开始扫描");
+            runOnUiThread(() -> {
+                mConnectButton.setEnabled(true);
+                countText.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.INVISIBLE);
+            });
+            showToast("断开连接");
+            closeGattButton.setVisibility(View.INVISIBLE);
+        });
+
         DeviceNameEditText = (EditText)findViewById(R.id.editText);
         mDeviceNameButton = (Button)findViewById(R.id.getDeviceNameButton);
         mDeviceNameButton.setOnClickListener(v -> {
@@ -136,8 +158,8 @@ public class MainActivity extends AppCompatActivity {
                 showToast("名称不为空");
                 return;
             }
-            Log.e(TAG, String.format("DeviceNameTextAsc= %s",DeviceNameText) );
-            Log.e(TAG, "onCreate: test="+ a );
+//            Log.e(TAG, String.format("DeviceNameTextAsc= %s",DeviceNameText) );
+//            Log.e(TAG, "onCreate: test="+ a );
             MainActivity.mBLEDeviceName = DeviceNameText;
             showToast("设备名已更改");
             setTitle("HumanSensing -> "+MainActivity.mBLEDeviceName);
@@ -175,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
             mDeviceNameButton.setEnabled(false);
             mDeviceNameButton.setVisibility(View.INVISIBLE);
             DeviceNameEditText.setVisibility(View.INVISIBLE);
+            mBluetoothAdapter.cancelDiscovery();
             scanner.startScan(mScanCallback);
             progressBar.setVisibility(View.VISIBLE);
             deviceText.setText("扫描中...");
@@ -252,10 +275,11 @@ public class MainActivity extends AppCompatActivity {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
             Log.d(TAG, "onConnectionStateChange: newState:" + newState);
+            Log.e(TAG, "onConnectionStateChange: status:" + status);
             if (newState == BluetoothGatt.STATE_CONNECTED) {
                 deviceText.setText("成功连接" + mBLEDeviceName);
-
                 runOnUiThread(()->{
+                    closeGattButton.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.INVISIBLE);
                     countText.setVisibility(View.VISIBLE);
                 });
@@ -265,7 +289,13 @@ public class MainActivity extends AppCompatActivity {
                 mBluetoothGatt.discoverServices();
 
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
-                mBluetoothGatt.close();
+                try {
+                    mBluetoothGatt.disconnect();
+                    mBluetoothGatt.close();
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+
                 Log.i(TAG, "onConnectionStateChange: 断开连接");
 //                String desc = "已准备等待连接至"+MainActivity.mBLEDeviceName;
                 deviceText.setText(String.format("失败,请重启蓝牙后再试一次"));
