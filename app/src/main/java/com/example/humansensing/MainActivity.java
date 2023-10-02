@@ -92,7 +92,8 @@ public class MainActivity extends AppCompatActivity {
 
                 if (scanner == null) {
                     Log.w(TAG, "initBluetooth: scanner null");
-                    showToast("scanner null");
+                    showToast("请稍后再试");
+                    finish();
                 }
             } else {
                 Toast.makeText(this, "不支持蓝牙", Toast.LENGTH_LONG).show();
