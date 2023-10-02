@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,7 +40,13 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
     private static final String CHANAL_ID = "jjq";
     public static final int NOTIFICATION_ID = 114514;
+    private Button mDeviceNameButton;
     private ProgressBar progressBar;
+    private EditText DeviceNameEditText;
+    private String DeviceNameText;
+    private TextView countText;
+    private int charaChangeCount = 0;
+    private TextView deviceText;
 
     private NotificationManagerCompat mNotificationManager;
 
@@ -47,21 +54,19 @@ public class MainActivity extends AppCompatActivity {
     private static final String CHARACTERISIC_UUID_RX = "19198102-9b0f-48fa-bfc3-e11234c74301";
     private List<BluetoothGattCharacteristic> mCharaList;
     private BluetoothGattCharacteristic mNeedChara;
-    private Button mbutton;
+    private Button mConnectButton;
     private List<BluetoothGattService> mGattServiceList;
     private BluetoothGatt mBluetoothGatt;
     private BluetoothDevice mESP32;
     private static final int SCAN_PERIOD = 15000;
     private boolean scanning;
 
-    private String desc;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner scanner;
-    private TextView deviceText;
 
     private boolean isSensing = false;
 
-    public static final String mBLEDeviceName = "ESP32";
+    public static String mBLEDeviceName = "ESP32";
     private BLE_Permission permission;
     private String TAG = "MainActivity_______________";
 
@@ -70,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "不支持低功耗蓝牙", Toast.LENGTH_SHORT).show();
             finish();
         } else {
-//            Toast.makeText(this, "低功耗蓝牙", Toast.LENGTH_SHORT).show();
+
             BluetoothManager bm = (BluetoothManager)
                     getSystemService(Context.BLUETOOTH_SERVICE);
             mBluetoothAdapter = bm.getAdapter();
@@ -99,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setTitle("HumanSensing -> "+MainActivity.mBLEDeviceName);
 
         mNotificationManager = NotificationManagerCompat.from(this);
 
@@ -108,33 +114,72 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setVisibility(View.INVISIBLE);
 
         deviceText = findViewById(R.id.textView);
-        desc = deviceText.getText().toString();
-        deviceText.setText(desc);
         deviceText.setText("已准备连接至" + MainActivity.mBLEDeviceName);
+
+        countText = findViewById(R.id.countText);
+        countText.setText("通知计数： " + charaChangeCount);
+        countText.setVisibility(View.INVISIBLE);
+        countText.setOnClickListener(v -> {
+            charaChangeCount = 0;
+            countText.setText("通知计数： " + charaChangeCount);
+        });
 
         permission = new BLE_Permission();
         permission.checkPermission(this);
-        mbutton = (Button) findViewById(R.id.button);
-        mbutton.setOnClickListener(v -> {
-            if(mbutton.getText().equals("开始监测")){
+
+        DeviceNameEditText = (EditText)findViewById(R.id.editText);
+        mDeviceNameButton = (Button)findViewById(R.id.getDeviceNameButton);
+        mDeviceNameButton.setOnClickListener(v -> {
+            String a = null;
+            DeviceNameText = DeviceNameEditText.getText().toString();
+            if (DeviceNameText.equals("")){
+                showToast("名称不为空");
+                return;
+            }
+            Log.e(TAG, String.format("DeviceNameTextAsc= %s",DeviceNameText) );
+            Log.e(TAG, "onCreate: test="+ a );
+            MainActivity.mBLEDeviceName = DeviceNameText;
+            showToast("设备名已更改");
+            setTitle("HumanSensing -> "+MainActivity.mBLEDeviceName);
+            mDeviceNameButton.setEnabled(false);
+            deviceText.setText("已准备连接至"+MainActivity.mBLEDeviceName);
+            mDeviceNameButton.setVisibility(View.INVISIBLE);
+            DeviceNameEditText.setVisibility(View.INVISIBLE);
+        });
+
+        mConnectButton = (Button) findViewById(R.id.button);
+        mConnectButton.setOnClickListener(v -> {
+            if(mConnectButton.getText().equals("开始监测")){
+                mDeviceNameButton.setEnabled(false);
+                mDeviceNameButton.setVisibility(View.INVISIBLE);
+                DeviceNameEditText.setVisibility(View.INVISIBLE);
                 isSensing = true;
                 deviceText.setText("开始监听");
-                mbutton.setText("停止监测");
+                mConnectButton.setText("停止监测");
+                countText.setVisibility(View.VISIBLE);
+
                 return;
-            }else if (mbutton.getText().equals("停止监测")){
+            }else if (mConnectButton.getText().equals("停止监测")){
+                mDeviceNameButton.setEnabled(false);
+                mDeviceNameButton.setVisibility(View.INVISIBLE);
+                DeviceNameEditText.setVisibility(View.INVISIBLE);
                 isSensing = false;
                 deviceText.setText("点击按钮开始监听");
-                mbutton.setText("开始监测");
+                mConnectButton.setText("开始监测");
                 return;
             }
 
             Log.d(TAG, "onCreate: 开始扫描");
 //            Toast.makeText(this, "开始扫描", Toast.LENGTH_SHORT).show();
-            mbutton.setText("正在扫描...");
+            mConnectButton.setText("正在扫描...");
+            mDeviceNameButton.setEnabled(false);
+            mDeviceNameButton.setVisibility(View.INVISIBLE);
+            DeviceNameEditText.setVisibility(View.INVISIBLE);
             scanner.startScan(mScanCallback);
+            progressBar.setVisibility(View.VISIBLE);
             deviceText.setText("扫描中...");
             scanning = true;
-            mbutton.setEnabled(false);
+            mConnectButton.setEnabled(false);
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -145,9 +190,13 @@ public class MainActivity extends AppCompatActivity {
                         deviceText.setText("未连接成功");
                         Log.d(TAG, "run: 未连接成功");
                         scanner.stopScan(mScanCallback);
+                        progressBar.setVisibility(View.INVISIBLE);
                         scanning = false;
-                        mbutton.setEnabled(true);
-                        mbutton.setText("开始扫描");
+                        mConnectButton.setEnabled(true);
+                        mConnectButton.setText("开始扫描");
+                        mDeviceNameButton.setEnabled(true);
+                        mDeviceNameButton.setVisibility(View.VISIBLE);
+                        DeviceNameEditText.setVisibility(View.VISIBLE);
                     }
                 }
             }, SCAN_PERIOD);
@@ -167,9 +216,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "onScanResult: DeviceName = " + DeviceName);
                 if (DeviceName != null) {
                     if (DeviceName.equals(mBLEDeviceName)) {
-                        mbutton.setText("已发现"+MainActivity.mBLEDeviceName);
+                        mConnectButton.setText("已发现"+MainActivity.mBLEDeviceName);
                         deviceText.setText("连接至" + mBLEDeviceName+"...");
-
                         scanning = false;
                         Log.i(TAG, "onScanResult: 发现" + mBLEDeviceName);
                         mESP32 = bluetoothDevice;
@@ -206,8 +254,13 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onConnectionStateChange: newState:" + newState);
             if (newState == BluetoothGatt.STATE_CONNECTED) {
                 deviceText.setText("成功连接" + mBLEDeviceName);
-                mbutton.setText("开始监测");
-                runOnUiThread(()->mbutton.setEnabled(true));
+
+                runOnUiThread(()->{
+                    progressBar.setVisibility(View.INVISIBLE);
+                    countText.setVisibility(View.VISIBLE);
+                });
+                mConnectButton.setText("开始监测");
+                runOnUiThread(()->mConnectButton.setEnabled(true));
                 Log.d(TAG, "onConnectionStateChange: STATE_CONNECTED");
                 mBluetoothGatt.discoverServices();
 
@@ -216,8 +269,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, "onConnectionStateChange: 断开连接");
 //                String desc = "已准备等待连接至"+MainActivity.mBLEDeviceName;
                 deviceText.setText(String.format("失败,请重启蓝牙后再试一次"));
-                mbutton.setText("再试一次");
-                runOnUiThread(() -> mbutton.setEnabled(true));
+                mConnectButton.setText("再试一次");
+                runOnUiThread(() -> {
+                    mConnectButton.setEnabled(true);
+                    countText.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.INVISIBLE);
+                });
                 showToast("断开连接");
             }
         }
@@ -273,11 +330,14 @@ public class MainActivity extends AppCompatActivity {
                 NotificationCompat.Builder builder = Notification(NotificationCompat.PRIORITY_HIGH);
                 mNotificationManager.notify(NOTIFICATION_ID,builder.build());
                 isSensing = false;
-                mbutton.setText("开始监测");
+                mConnectButton.setText("开始监测");
                 deviceText.setText("收到notify,点击按钮重新开始监听");
             } else {
                 deviceText.setText("点击按钮开始监听");
             }
+
+            charaChangeCount++;
+            countText.setText("通知计数： " + charaChangeCount);
         }
     };
 
