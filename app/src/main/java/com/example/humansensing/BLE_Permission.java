@@ -22,7 +22,8 @@ public class BLE_Permission {
             android.Manifest.permission.BLUETOOTH_SCAN,
             android.Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.ACCESS_NOTIFICATION_POLICY,
-            Manifest.permission.BLUETOOTH
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.VIBRATE
     };
     private List<String> permissionList = new ArrayList<>();
     private void requestPermission(Activity activity){
