@@ -328,6 +328,7 @@ public class MainActivity extends AppCompatActivity {
                     DeviceNameEditText.setVisibility(View.VISIBLE);
                     mDeviceNameButton.setVisibility(View.VISIBLE);
                     mDeviceNameButton.setEnabled(true);
+                    closeGattButton.setVisibility(View.INVISIBLE);
                 });
                 showToast("断开连接");
             }
